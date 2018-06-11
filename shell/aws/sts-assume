@@ -1,0 +1,114 @@
+#!/bin/bash
+# Author  : Bruno Carvalho
+# Date    : 08-Jun-2018
+# Details : Impersonates a role using a temporary token for a given profile.
+#           Depends on AWS CLI and jq in order to obtain the JSON and parse its values into variables.
+
+# Set verbose to 1 if you want to debug this shit
+verbose=1
+syntax="sts-assume $@"
+
+if [ $1 == 'help' ]
+then
+  display_help
+  return 0
+elif [ $1 == 'reset' ]
+then
+  reset_token
+  return 0
+elif [ $# != 2 ]
+then
+  display_syntax_error $syntax
+  return 1
+fi
+
+# Set variables and reset AWS credentials settings
+role=${1}
+profile=${2}
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_SESSION_TOKEN=
+
+# Functions
+reset_token(){
+  unset AWS_ACCESS_KEY_ID
+  unset AWS_SECRET_ACCESS_KEY
+  unset AWS_SESSION_TOKEN
+  echo "Session token removed."
+}
+
+display_help(){
+  echo "Usage: sts-assume <ROLE_ARN> <CLI_PROFILE>."
+  echo "Example:"
+  echo "sts-assume arn:aws:iam::ACCPOUNT_ID:role/ROLE_ARN CLI_PROFILE"
+}
+
+display_syntax_error(){
+  echo "Invalid command: ${1}"
+  echo "Usage: sts-assume <ROLE_ARN> <CLI_PROFILE>"
+}
+
+sts_assume_role(){
+# Generate temporary credentials
+aws sts assume-role --role-arn "${role}" --role-session-name "sts-assumed-${USER}" --profile ${profile} --output json > /tmp/sts
+
+# Parse credentials from JSON into array STS_DATA
+export STS_DATA=($(jq -r '.Credentials' /tmp/sts))
+export TOKEN_LENGTH=${#STS_DATA[4]} && export TOKEN_LENGTH=$(( $TOKEN_LENGTH - 2 ))
+
+# Set the new credentials based on the array content
+AWS_ACCESS_KEY_ID="${STS_DATA[8]:1:20}"
+AWS_SECRET_ACCESS_KEY="${STS_DATA[2]:1:40}"
+AWS_SESSION_TOKEN="${STS_DATA[4]:1:${TOKEN_LENGTH}}"
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN
+
+if [ ${#STS_DATA[2]} == 0 ]; then echo "Command failed."; else echo "Success. Role assumed: ${role}" && echo "Every command used on CLI will be under this role until it expires."; fi
+}
+
+verbose_init(){
+  # Start the log with current caller identity
+  echo "Log started at: `date`"
+  echo ''
+  echo "INFO: Command executed was... "
+  echo "${syntax}"
+  echo "Profile provided ${profile} has the following credentials: " 
+  aws sts get-caller-identity --profile ${profile} 
+  echo '' 
+}
+
+verbose_append(){
+  # Get the log from sts_assume_role function
+  echo "DEBUG: sts_assume_role: Output for the provided role: ${role}"
+  cat /tmp/sts && echo ''
+  # Debug: Display the contents of the array. The sizes are fixed for access key to 20 chars, secret key 40 and sts is dynamic. This might need to be reviewed.
+  echo "DEBUG: Values attempted to be inserted into the variables necessary for AWS CLI: "
+  echo ''
+  echo "Token Length = ${TOKEN_LENGTH}"
+  echo Access Key ID: "${STS_DATA[8]:1:20}"
+  echo Secret Key ID: "${STS_DATA[2]:1:40}"
+  echo STS Token....: "${STS_DATA[4]:1:${TOKEN_LENGTH}}"
+  echo ''
+  echo "Content of array STS_DATA: "
+  echo "${STS_DATA[@]}"
+  # Display the new identity (if everything was fine, this should display the new identity
+  echo "INFO: Result of complete operation performed by sts_assume_role."
+  echo "Role assumed information: "
+  aws sts get-caller-identity
+}
+
+verbose_display(){
+  cat /tmp/sts-verbose.log
+}
+
+### Here is where the script actually start doing stuff...
+# This initiates the log to be displayed after the execution is complete.
+if [ $verbose == 1 ]; then verbose_init > /tmp/sts-verbose.log ; fi
+
+# The function below is responsible for all the fun stuff
+sts_assume_role
+
+# This appends the remainder of steps to the logs
+if [ ${verbose} == 1 ]; then verbose_append >> /tmp/sts-verbose.log; fi
+if [ ${verbose} == 1 ]; then verbose_display; fi

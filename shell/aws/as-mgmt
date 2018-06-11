@@ -1,0 +1,32 @@
+#!/bin/bash
+# Author    : Bruno Carvalho
+# Date      : 10-May-2018
+# Details   : This script terminates and launches instances. Intended to be used from crontab.
+# Usage     : Parameter 1: Start/Stop
+#           : Parameter 2: Auto scaling group name
+#           : Parameter 3: AWS Region, for example us-east-1, ap-southeast-2, etc
+# From cron : 00 09 * * * /home/ec2-user/scripts/shell/bastion/as-mgmt start WebGrp us-west-2 >>/tmp/startlab.log 2>&1
+#           : 00 17 * * * /home/ec2-user/scripts/shell/bastion/as-mgmt stop WebGrp us-west-2 >>/tmp/stoplab.log 2>&1
+# Note      : This can be easily replaced with the scheduled activities in AWS Console.
+
+if [ $# != 3 ]
+then
+  echo "Usage: as-mgmt <stop/start> <as group name> <region>"
+  echo "Example: "
+  echo "as-mgmt stop webgrp us-east-1"
+  exit 1
+else
+  action=`echo $1 | tr 'A-Z' 'a-z'`
+  asgrp=$2
+  region=$3
+fi
+
+if [ $action == 'start' ]
+then
+  aws autoscaling set-desired-capacity --auto-scaling-group-name $asgrp --desired-capacity 1 --region $region
+elif [ $action == 'stop' ]
+then
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name $asgrp --desired-capacity 0 --min-size 0 --region $region
+else
+  echo "Invalid argument. Use <stop/start>"
+fi
