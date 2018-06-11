@@ -5,7 +5,7 @@
 #           Depends on AWS CLI and jq in order to obtain the JSON and parse its values into variables.
 
 # Set verbose to 1 if you want to debug this shit
-verbose=1
+verbose=0
 syntax="sts-assume $@"
 
 if [ $1 == 'help' ]
