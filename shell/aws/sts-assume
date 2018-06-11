@@ -40,7 +40,7 @@ reset_token(){
 display_help(){
   echo "Usage: sts-assume <ROLE_ARN> <CLI_PROFILE>."
   echo "Example:"
-  echo "sts-assume arn:aws:iam::ACCPOUNT_ID:role/ROLE_ARN CLI_PROFILE"
+  echo "sts-assume arn:aws:iam::ACCOUNT_ID:role/ROLE_ARN CLI_PROFILE"
 }
 
 display_syntax_error(){
