@@ -4,23 +4,8 @@
 # Details : Impersonates a role using a temporary token for a given profile.
 #           Depends on AWS CLI and jq in order to obtain the JSON and parse its values into variables.
 
-# Set verbose to 1 if you want to debug this shit
-verbose=0
+if [ -z ${3+x} ]; then verbose=0; elif [ ${3} == 'verbose' ]; then verbose=1; fi
 syntax="sts-assume $@"
-
-if [ $1 == 'help' ]
-then
-  display_help
-  return 0
-elif [ $1 == 'reset' ]
-then
-  reset_token
-  return 0
-elif [ $# != 2 ]
-then
-  display_syntax_error $syntax
-  return 1
-fi
 
 # Set variables and reset AWS credentials settings
 role=${1}
@@ -38,9 +23,10 @@ reset_token(){
 }
 
 display_help(){
-  echo "Usage: sts-assume <ROLE_ARN> <CLI_PROFILE>."
-  echo "Example:"
+  echo "Usage: sts-assume <ROLE_ARN> <CLI_PROFILE> (<verbose> optional)."
+  echo "Examples:"
   echo "sts-assume arn:aws:iam::ACCOUNT_ID:role/ROLE_ARN CLI_PROFILE"
+  echo "sts-assume arn:aws:iam::ACCOUNT_ID:role/ROLE_ARN CLI_PROFILE verbose"
 }
 
 display_syntax_error(){
@@ -53,7 +39,7 @@ sts_assume_role(){
 aws sts assume-role --role-arn "${role}" --role-session-name "sts-assumed-${USER}" --profile ${profile} --output json > /tmp/sts
 
 # Parse credentials from JSON into array STS_DATA
-export STS_DATA=($(jq -r '.Credentials' /tmp/sts))
+STS_DATA=($(jq -r '.Credentials' /tmp/sts)) && export STS_DATA=${STS_DATA}
 export TOKEN_LENGTH=${#STS_DATA[4]} && export TOKEN_LENGTH=$(( $TOKEN_LENGTH - 2 ))
 
 # Set the new credentials based on the array content
@@ -101,6 +87,20 @@ verbose_append(){
 verbose_display(){
   cat /tmp/sts-verbose.log
 }
+
+if [ $1 == 'help' ]
+then
+  display_help
+  return 0
+elif [ $1 == 'reset' ]
+then
+  reset_token
+  return 0
+elif [ $# -gt 3 ]
+then
+  display_syntax_error $syntax
+  return 1
+fi
 
 ### Here is where the script actually start doing stuff...
 # This initiates the log to be displayed after the execution is complete.
