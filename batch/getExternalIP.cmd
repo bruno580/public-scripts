@@ -8,5 +8,6 @@ REM Get the content of ifconfig.co and extract the ip information
 > %TEMP%\1 powershell (Invoke-WebRequest -Uri "ifconfig.co").Content & > %TEMP%\2 findstr /C:"ip\":" %TEMP%\1 
 
 REM Format the output and print the formated IP address
-set /p ip= < %TEMP%\2 & set ipf=%ip:~9,-2%
+set /p ip= < %TEMP%\2
+set ipf=%ip:~9,-2%
 ECHO %ipf%
