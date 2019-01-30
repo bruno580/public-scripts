@@ -75,14 +75,14 @@ if [[ -f ~/.pg_${IAM_USER} ]]; then exit 0; fi
     read -p "Database Endpoint: " RDSHOST
     read -p "Database Port: [5432] " RDSPORT; RDSPORT=${RDSPORT:-5432}
     read -p "Database Name: " RDSDB
-cat  > ~/.pg_${IAM_USER} << EOF
-    export RDSHOST="${RDSHOST}"
-    export RDSPORT="${RDSPORT}"
-    export RDSDB="${RDSDB}"
-    export REGION="${REGION}"
-    export IAM_USER="${IAM_USER}"
-    export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
-    export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
+cat << EOF > ~/.pg_${IAM_USER} 
+export RDSHOST="${RDSHOST}"
+export RDSPORT="${RDSPORT}"
+export RDSDB="${RDSDB}"
+export REGION="${REGION}"
+export IAM_USER="${IAM_USER}"
+export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
+export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
 EOF
 return 0
 }
