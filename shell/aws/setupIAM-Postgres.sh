@@ -83,6 +83,7 @@ export REGION="${REGION}"
 export IAM_USER="${IAM_USER}"
 export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
 export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
+echo ${CONN}
 EOF
 return 0
 }
@@ -102,7 +103,7 @@ createIAMRole
 attachIAMPolicyToRole
 createParameterFile
 getSSLCertificate
-. ~/.pg_${IAM_USER}
+. ~/.pg_${IAM_USER} > /dev/null
 if [[ -z $PGPASSWORD ]] 
 then 
     echo "Environment configured, but token creation failed."
@@ -113,5 +114,8 @@ else
     echo "Environment configured successfully."
     echo "You can connect to the database now with the following connection string: "
     echo "${CONN}"
+    echo ''
+    echo "You can generate tokens and get the connection string at any time by running: "
+    echo ". ~/.pg_${IAM_USER}"
     exit 0
 fi
