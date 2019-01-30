@@ -65,7 +65,7 @@ getSSLCertificate(){
     then 
         return 0
     else 
-        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /tmp/ssl.log
+        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem -o /tmp/ssl.log
         if [[ $? > 0 ]]; then echo "Failed to download SSL Certificate" && exit 1; else return 0; fi
     fi
 }
