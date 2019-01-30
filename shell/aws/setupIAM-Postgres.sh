@@ -65,9 +65,9 @@ getSSLCertificate(){
     then 
         return 0
     else 
-        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /tmp/ssl.log
+        if [[ $? > 0 ]]; then echo "Failed to download SSL Certificate" && exit 1; else return 0; fi
     fi
-    return 0
 }
 createParameterFile() {
 if [[ -f ~/.pg_${IAM_USER} ]]; then exit 0; fi
@@ -103,7 +103,7 @@ attachIAMPolicyToRole
 createParameterFile
 getSSLCertificate
 . ~/.pg_${IAM_USER}
-if [[ -z $CONN ]] 
+if [[ -z $PGPASSWORD ]] 
 then 
     echo "Environment configured, but token creation failed."
     echo "Try again later by running the command below:"
