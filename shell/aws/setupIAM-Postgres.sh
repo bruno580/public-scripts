@@ -108,10 +108,10 @@ then
     echo "Environment configured, but token creation failed."
     echo "Try again later by running the command below:"
     echo ". ~/.pg_${IAM_USER}"
-    return 1
+    exit 1
 else
     echo "Environment configured successfully."
     echo "You can connect to the database now with the following connection string: "
     echo "${CONN}"
-    return 0
+    exit 0
 fi
