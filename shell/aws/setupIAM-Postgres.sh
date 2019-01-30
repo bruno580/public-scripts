@@ -60,6 +60,31 @@ attachIAMPolicyToRole(){
     aws iam attach-role-policy --policy-arn ${POLICY_ARN} --role-name ${ROLE_NAME}
     return 0
 }
+getSSLCertificate(){
+    if [[ -f rds-combined-ca-bundle.pem ]] 
+    then 
+        return 0
+    else 
+        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+    fi
+    return 0
+}
+createParameterFile() {
+if [[ -f ~/.pg_${IAM_USER} ]]; then exit 0; fi
+    echo "Please provide database details to create the parameter file that will be used to generate the authentication token."
+    read -p "Database Endpoint: " RDSHOST
+    read -p "Database Port: [5432] " RDSPORT; RDSPORT=${RDSPORT:-5432}
+    read -p "Database Name: " RDSDB
+    cat << EOF
+    export RDSHOST="${RDSHOST}"
+    export RDSPORT="${RDSPORT}"
+    export RDSDB="${RDSDB}"
+    export REGION="${REGION}"
+    export IAM_USER="${IAM_USER}"
+    export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
+    export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
+EOF > ~/.pg_${IAM_USER}
+}
 validateSettings(){
     if [[ -z $ACC_ID ]]; then echo "Failed to get Account ID, make sure your AWS CLI is properly configured." && exit 1; fi
     if [[ -z $IAM_USER ]]; then echo "No IAM user was entered. Rerun the script and enter the IAM User." && exit 1; fi
@@ -74,3 +99,17 @@ validateSettings
 createIAMPolicy
 createIAMRole
 attachIAMPolicyToRole
+createParameterFile
+getSSLCertificate
+. ~/.pg_${IAM_USER}
+if [[ -z $CONN ]] 
+then 
+    echo "Environment configured, but token creation failed."
+    echo "Try again later by running the command below:"
+    echo ". ~/.pg_${IAM_USER}"
+    exit 1
+else
+    echo "Environment configured successfully."
+    echo "You can connect to the database now with the following connection string: "
+    echo "${CONN}"
+fi
