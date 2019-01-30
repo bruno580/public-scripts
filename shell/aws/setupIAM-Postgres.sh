@@ -81,10 +81,10 @@ export RDSPORT="${RDSPORT}"
 export RDSDB="${RDSDB}"
 export REGION="${REGION}"
 export IAM_USER="${IAM_USER}"
-export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
 export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
 EOF
 echo "echo \$CONN" >> ~/.pg_${IAM_USER} 
+echo "export PGPASSWORD=\"\$(aws rds generate-db-auth-token --hostname \$RDSHOST --port \$RDSPORT --region \$REGION --username \$IAM_USER)\"" >> ~/.pg_${IAM_USER}
 return 0
 }
 validateSettings(){
