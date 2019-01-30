@@ -113,5 +113,6 @@ else
     echo "Environment configured successfully."
     echo "You can connect to the database now with the following connection string: "
     echo "${CONN}"
+    echo "${PGPASSWORD}"
     exit 0
 fi
