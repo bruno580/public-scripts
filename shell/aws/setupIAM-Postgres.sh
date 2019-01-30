@@ -75,7 +75,7 @@ if [[ -f ~/.pg_${IAM_USER} ]]; then exit 0; fi
     read -p "Database Endpoint: " RDSHOST
     read -p "Database Port: [5432] " RDSPORT; RDSPORT=${RDSPORT:-5432}
     read -p "Database Name: " RDSDB
-    cat << EOF
+cat  > ~/.pg_${IAM_USER} << EOF
     export RDSHOST="${RDSHOST}"
     export RDSPORT="${RDSPORT}"
     export RDSDB="${RDSDB}"
@@ -83,7 +83,8 @@ if [[ -f ~/.pg_${IAM_USER} ]]; then exit 0; fi
     export IAM_USER="${IAM_USER}"
     export PGPASSWORD="$(aws rds generate-db-auth-token --hostname $RDSHOST --port $RDSPORT --region $REGION --username $IAM_USER)"
     export CONN="psql \"host=$RDSHOST dbname=$RDSDB user=$IAM_USER sslrootcert=rds-combined-ca-bundle.pem sslmode=verify-full\""
-EOF > ~/.pg_${IAM_USER}
+EOF
+return 0
 }
 validateSettings(){
     if [[ -z $ACC_ID ]]; then echo "Failed to get Account ID, make sure your AWS CLI is properly configured." && exit 1; fi
@@ -107,9 +108,10 @@ then
     echo "Environment configured, but token creation failed."
     echo "Try again later by running the command below:"
     echo ". ~/.pg_${IAM_USER}"
-    exit 1
+    return 1
 else
     echo "Environment configured successfully."
     echo "You can connect to the database now with the following connection string: "
     echo "${CONN}"
+    return 0
 fi
